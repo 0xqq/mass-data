@@ -6,6 +6,5 @@ import scala.concurrent.ExecutionContext
 
 abstract class SchedulerSystemRef extends BaseSystem {
   val waitForJobsToComplete: Boolean
-
-  implicit def dispatcher: ExecutionContext
+  implicit def executionContext: ExecutionContext
 }

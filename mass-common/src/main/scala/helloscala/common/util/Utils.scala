@@ -35,13 +35,13 @@ object Utils {
   @inline def getPid: Long =
     java.lang.Long.parseLong(ManagementFactory.getRuntimeMXBean.getName.split("@")(0))
 
-  def either[R](func: => R): Either[Throwable, R] =
+  def either[T <: Throwable, R](func: => R): Either[T, R] =
     try {
       val result = func
       Right(result)
     } catch {
       case NonFatal(e) =>
-        Left(e)
+        Left(e.asInstanceOf[T])
     }
 
   /**

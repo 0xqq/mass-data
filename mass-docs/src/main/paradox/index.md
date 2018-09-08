@@ -17,7 +17,7 @@
 * [intro/index](intro/index.md)
 * [design/index](design/index.md)
 * [connector](connector/index.md)
-* [scheduler](scheduler/index.md)
+* [job](job/index.md)
 * [rdi/index](rdi/index.md)
 * [console/index](console/index.md)
 * [broker/index](broker/index.md)

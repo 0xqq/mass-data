@@ -1,0 +1,109 @@
+syntax = "proto3";
+package mass.model.job;
+
+import "google/protobuf/wrappers.proto";
+import "scalapb/scalapb.proto";
+import "mass/model/define.proto";
+
+enum Program {
+    UNKOWN = 0;
+    SCALA = 1;
+    JAVA = 2;
+    PYTHON = 3;
+    SH = 4;
+    SQL = 5;
+}
+
+enum TriggerType {
+    TRIGGER_UNKNOWN = 0;
+    CRON = 1;
+    SIMPLE = 2;
+    EVENT = 3;
+}
+
+option (scalapb.options) = {
+  import: "mass.core.protobuf.MassProtoImplicits._"
+};
+
+message JobItem {
+
+    // Job key，需要全局唯一。
+    string key = 1;
+
+    //  Job程序类型：java、sh、python、sql
+    Program program = 2;
+
+    repeated string programOptions = 3;
+
+    string programMain = 4;
+
+    // 程序执行参数
+    repeated string programArgs = 5;
+
+    // 程序版本。java: 7、8，python：2.7、3.6，sql：psql、mysql、sqlplus
+    string programVersion = 6;
+
+    // Job程序需要的资源
+    map<string, string> resources = 7;
+
+    map<string, string> data = 8;
+
+    // 描述
+    string description = 9;
+
+    int64 createdAt = 10 [(scalapb.field).type = "java.time.OffsetDateTime"];
+}
+
+
+message JobTrigger {
+    // required Trigger key，需要全局唯一。
+    string key = 1;
+
+    // required 触发器类型：simple、cron、event
+    TriggerType triggerType = 2;
+
+    // 触发事件（通过IPC服务获取的全局事件完整名）
+    string triggerEvent = 3;
+
+    // 设置任务开始时间
+    int64 startTime = 4 [(scalapb.field).type = "scala.Option[java.time.OffsetDateTime]"];
+
+    // 设置任务结束时间
+    int64 endTime = 5 [(scalapb.field).type = "scala.Option[java.time.OffsetDateTime]"];
+
+    // 任务重复次数，triggerType == simple时有效
+    int32 repeat = 6;
+
+    // 两次任务之间的间隔时间，triggerType == simple时有效
+    int64 duration = 7 [(scalapb.field).type = "scala.concurrent.duration.FiniteDuration"];
+
+    // 类似CRON的基于日历时间的调度，triggerType == cron时有效
+    string cronExpress = 8;
+
+    // 描述
+    string description = 9;
+
+    int64 createdAt = 10 [(scalapb.field).type = "java.time.OffsetDateTime"];
+}
+
+message JobItemRow {
+    string key = 1;
+    JobItem config = 2;
+    string creator = 3;
+    int64 createdAt = 10 [(scalapb.field).type = "java.time.OffsetDateTime"];
+}
+
+message JobTriggerRow {
+    string key = 1;
+    JobTrigger config = 2;
+    string creator = 3;
+    int64 createdAt = 10 [(scalapb.field).type = "java.time.OffsetDateTime"];
+}
+
+message JobScheduleRow {
+    string jobKey = 1;
+    string triggerKey = 2;
+    string description = 3;
+    CommonStatus status = 4;
+    int64 createdAt = 5 [(scalapb.field).type = "java.time.OffsetDateTime"];
+}

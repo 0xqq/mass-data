@@ -12,6 +12,8 @@ trait BaseSystem {
   def name: String
   def system: ActorSystem
   def configuration: Configuration
+
+  def as[T: ClassTag]: T = this.asInstanceOf[T]
 }
 
 abstract private[mass] class MassSystem(
@@ -22,7 +24,7 @@ abstract private[mass] class MassSystem(
 
   def configuration: Configuration = _configuration
 
-  def as[T: ClassTag]: T = this.asInstanceOf[T]
+  def init(): Unit
 
   /**
    * @return 返回临时目录
@@ -44,6 +46,9 @@ object MassSystem {
 
   def instance: MassSystem = _instance
 
+  def instance_=(v: MassSystem): Unit =
+    _instance = v
+
   def apply(): MassSystem = {
     val config = ConfigFactory.load()
     val system = ActorSystem(config.getString("mass.name"), config)
@@ -62,6 +67,7 @@ object MassSystem {
       .getDeclaredConstructor(classOf[String], classOf[ActorSystem], classOf[Configuration])
       .newInstance(name, system, configuration)
       .asInstanceOf[MassSystem]
+    _instance.init()
     _instance
   }
 
@@ -71,4 +77,6 @@ class MassSystemImpl(
     override val name: String,
     override val system: ActorSystem,
     private var _configuration: Configuration
-) extends MassSystem(name, system, _configuration)
+) extends MassSystem(name, system, _configuration) {
+  override def init(): Unit = {}
+}

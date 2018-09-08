@@ -2,11 +2,8 @@ package mass.server
 
 import akka.actor.ActorSystem
 import helloscala.common.Configuration
-import javax.sql.DataSource
 import mass.core.MassSystem
-import mass.core.jdbc.JdbcTemplate
-import mass.slick.SlickProfile
-import slick.jdbc.DataSourceJdbcDataSource
+import mass.slick.SqlManager
 
 class MassSystemExtension(
     override val name: String,
@@ -14,28 +11,17 @@ class MassSystemExtension(
     private var _configuration: Configuration
 ) extends MassSystem(name, system, _configuration) {
 
-  private val postgresProps =
-    configuration.getConfiguration("mass.core.persistence.postgres")
+  val sqlManager = SqlManager(configuration)
 
-  val slickDatabase: SlickProfile.backend.DatabaseDef =
-    SlickProfile.createDatabase(postgresProps)
-
-  val dataSource: DataSource =
-    slickDatabase.source.asInstanceOf[DataSourceJdbcDataSource].ds
-  val jdbcTemplate = JdbcTemplate(dataSource, postgresProps)
-  init()
-
-  private def init(): Unit =
-    system.registerOnTermination {
-      slickDatabase.close()
+  override def init(): Unit =
+    sys.addShutdownHook {
+      sqlManager.slickDatabase.close()
     }
 
   override def toString: String =
-    s"MassSystemExtension($name, $system, $configuration, $dataSource)"
+    s"MassSystemExtension($name, $system, $configuration, $sqlManager)"
 }
 
 object MassSystemExtension {
-
-  def instance: MassSystemExtension =
-    MassSystem.instance.as[MassSystemExtension]
+  def instance: MassSystemExtension = MassSystem.instance.as[MassSystemExtension]
 }

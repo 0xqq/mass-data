@@ -9,7 +9,7 @@ package helloscala.common.exception;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import helloscala.common.ErrCodes;
-import helloscala.common.data.IApiResult;
+import helloscala.data.IApiResult;
 
 /**
  * Exception 基类

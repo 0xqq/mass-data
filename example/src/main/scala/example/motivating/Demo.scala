@@ -4,11 +4,14 @@
 package example.motivating
 
 import java.security.SecureRandom
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
+import mass.core.job.SchedulerJob
 
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -18,10 +21,10 @@ case class Status()
 case class Sample(timestamp: Long, sample: Float)
 
 object Demo extends App with StrictLogging {
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-
-  val random = new SecureRandom()
+//  implicit val system = ActorSystem()
+//  implicit val mat = ActorMaterializer()
+//
+//  val random = new SecureRandom()
 
   //  Source.single("ddd")
   //    .map(elem => List(elem, elem))
@@ -45,17 +48,35 @@ object Demo extends App with StrictLogging {
   //    }
 
   // -------------------------------------------------------------------------------------------------------------------
-  val status =
-    Source
-      .tick(0.minute, 10.seconds, ())
-      .map(_ => Status())
+//  val status =
+//    Source
+//      .tick(0.minute, 10.seconds, ())
+//      .map(_ => Status())
+//
+//  Source
+//    .tick(0.milliseconds, 1.second, ())
+//    .map(_ => Sample(System.currentTimeMillis(), random.nextFloat()))
+//    .merge(status)
+//    .runWith(Sink.foreach(println))
+//
+//  StdIn.readLine()
+//  system.terminate()
 
-  Source
-    .tick(0.milliseconds, 1.second, ())
-    .map(_ => Sample(System.currentTimeMillis(), random.nextFloat()))
-    .merge(status)
-    .runWith(Sink.foreach(println))
+  import scala.concurrent.duration._
+  println(36071.millis.toString())
 
-  StdIn.readLine()
-  system.terminate()
+  val d = Duration("36071 milliseconds")
+  println(d)
+  println(FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS))
+
+  println("%02d".format(5))
+
+//  val clz = Class.forName("mass.job.business.job.DefaultSchedulerJob")
+//  val ret = clz.isAssignableFrom(classOf[SchedulerJob])
+//  println(clz)
+//  println(s"$clz ret: $ret")
+//  println(s"$clz ret: ${classOf[SchedulerJob].isAssignableFrom(clz)}")
+//  println(clz.asSubclass(classOf[SchedulerJob]))
+//  println(clz.newInstance().asInstanceOf[SchedulerJob])
+  println(UUID.randomUUID().toString.length)
 }

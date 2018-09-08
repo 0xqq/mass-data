@@ -12,11 +12,18 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 
 object StringUtils {
+
   val BLACK_CHAR: Char = ' '
   val PRINTER_CHARS: immutable.IndexedSeq[Char] = ('0' to '9') ++ ('a' to 'z') ++ ('A' to 'Z')
   private val HEX_CHARS: Array[Char] = "0123456789abcdef".toCharArray
-  private val HEX_CHAR_SETS = Set
-    .empty[Char] ++ ('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')
+  private val HEX_CHAR_SETS = Set[Char]() ++ ('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')
+
+  def extractFirstName(msg: Any): Option[String] = msg match {
+    case c: AnyRef =>
+      val s = convertPropertyToUnderscore(c.getClass.getSimpleName)
+      Some(s.take(s.indexOf('_')))
+    case _ => None
+  }
 
   def option(text: String): Option[String] =
     if (isBlank(text)) None else Some(text)

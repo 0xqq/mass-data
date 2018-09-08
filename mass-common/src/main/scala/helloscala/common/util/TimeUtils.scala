@@ -20,8 +20,8 @@ object TimeUtils extends StrictLogging {
   val DATE_TIME_EPOCH: LocalDateTime = LocalDateTime.of(1970, 1, 1, 0, 0, 0)
   val ZONE_CHINA_OFFSET: ZoneOffset = ZoneOffset.ofHours(8)
 
-  val formatterDateTime: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+  val formatterDateTime: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+  val formatterDateTimeMillisCompact: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")
   val formatterMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
   val formatterDate: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -32,6 +32,9 @@ object TimeUtils extends StrictLogging {
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
   val formatterMinutes: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
   val formatterTime: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+
+  val formatterYear: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy")
+  val formatterOnlyMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("MM")
 
   val DateKeys = List("年", "月", "-", "/", "日")
 
@@ -228,6 +231,9 @@ object TimeUtils extends StrictLogging {
 
   def toZonedDateTime(date: String, time: String, zoneId: ZoneId): ZonedDateTime =
     toLocalDateTime(date, time).atZone(zoneId)
+
+  def toOffsetDateTime(epochMillis: Long): OffsetDateTime =
+    Instant.ofEpochMilli(epochMillis).atOffset(ZONE_CHINA_OFFSET)
 
   def toOffsetDateTime(zdt: String): OffsetDateTime =
     try {

@@ -9,57 +9,69 @@ create extension adminpack;
 create extension hstore;
 
 ----------------------------------------
+-- #functions
+----------------------------------------
+
+-- 将数组反序
+create or replace function array_reverse(anyarray)
+  returns anyarray as $$
+select array(
+         select $1 [ i ] from generate_subscripts($1, 1) as s (i) order be i desc
+           );
+$$
+language 'sql'
+strict
+immutable;
+----------------------------------------
+-- #functions
+----------------------------------------
+
+----------------------------------------
 -- init tables, views, sequences  begin
 ----------------------------------------
 
--- #ddl-job start
-drop table if exists public.job_detail;
-create table public.job_detail (
-  key        varchar(64) primary key,
-  data       hstore      not null,
-  conf       jsonb       null,
+-- #ddl-job
+drop table if exists public.job_item;
+create table public.job_item (
+  key        varchar(128) primary key,
+  config     jsonb       not null,
+  creator    varchar(36) not null,
   created_at timestamptz not null
 );
-comment on column public.job_detail.data
-is '传给任务的参数，Map[String, String] 形式的JSON对象';
 
 drop table if exists public.job_trigger;
 create table public.job_trigger (
-  key          varchar(64)  not null primary key,
-  cron_express varchar(255) null,
-  duration     bigint       null,
-  repeat       int          null,
-  start_time   timestamptz  null,
-  end_time     timestamptz  null,
-  conf         jsonb        null,
-  created_at   timestamptz  not null
+  key        varchar(128) not null primary key,
+  config     jsonb       not null,
+  creator    varchar(36) not null,
+  created_at timestamptz not null
 );
-comment on table public.job_trigger
-is '调度任务触发配置';
-comment on column job_trigger.cron_express
-is 'CRON定时任务配置，当此配置设置时，repeat、duration将无效';
 
 drop table if exists public.job_schedule;
 create table public.job_schedule (
-  id          char(24) primary key,
-  detail_key  varchar(64) not null,
-  trigger_key varchar(64) not null,
-  status      int         not null default 1,
-  created_at  timestamptz not null
+  job_key     varchar(128) not null,
+  trigger_key varchar(128) not null,
+  description text         not null,
+  status      int          not null default 1,
+  created_at  timestamptz  not null,
+  constraint job_schedule_pk primary key (job_key, trigger_key)
 );
+comment on table public.job_schedule
+is '调度任务，job_item与job_trigger关联后实际执行';
 comment on column public.job_schedule.status
 is '调度任务闫：0 未启用，1 启用';
 
 drop table if exists public.job_log;
 create table public.job_log (
   id                char(24) primary key,
-  job_id            char(24), -- FK job_schedule.id
+  job_key           varchar(128), -- FK job_item.key
+  trigger_key       varchar(128), -- FK job_trigger.key
   start_time        timestamptz not null,
   completion_time   timestamptz,
   completion_status int,
   completion_value  text
 );
--- #ddl-job end
+-- #ddl-job
 
 -- #ddl-workflow
 drop table if exists public.wf_detail;
@@ -81,27 +93,21 @@ is '创建时间';
 -- change tables, views, sequences owner to massdata
 DO $$DECLARE r record;
 BEGIN
-  FOR r IN SELECT table_name
-           FROM information_schema.tables
-           WHERE table_schema = 'public'
+  FOR r IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
   LOOP
     EXECUTE 'alter table ' || r.table_name || ' owner to massdata;';
   END LOOP;
 END$$;
 DO $$DECLARE r record;
 BEGIN
-  FOR r IN select sequence_name
-           from information_schema.sequences
-           where sequence_schema = 'public'
+  FOR r IN select sequence_name from information_schema.sequences where sequence_schema = 'public'
   LOOP
     EXECUTE 'alter sequence ' || r.sequence_name || ' owner to massdata;';
   END LOOP;
 END$$;
 DO $$DECLARE r record;
 BEGIN
-  FOR r IN select table_name
-           from information_schema.views
-           where table_schema = 'public'
+  FOR r IN select table_name from information_schema.views where table_schema = 'public'
   LOOP
     EXECUTE 'alter table ' || r.table_name || ' owner to massdata;';
   END LOOP;

@@ -1,0 +1,97 @@
+syntax = "proto3";
+package mass.message.job;
+
+//import "google/protobuf/timestamp.proto";
+import "scalapb/scalapb.proto";
+import "mass/model/define.proto";
+import "mass/model/job/job.proto";
+
+// #JobConfig
+message JobConfig {
+    mass.model.job.JobItem item = 1;
+    mass.model.job.JobTrigger trigger = 2;
+    // 描述
+    string description = 3;
+}
+// #JobConfig
+
+message SchedulerJobResult {
+    option (scalapb.message).extends = "mass.core.model.scheduler.SchedulerJobResultTrait";
+
+    int64 start = 1;
+    int64 end = 2;
+    int32 exitValue = 3;
+    string outPath = 4;
+    string errPath = 5;
+}
+
+message JobPageReq {
+    option (scalapb.message).extends = "helloscala.common.page.Page";
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    int32 page = 1;
+    int32 size = 2;
+    string jobKey = 3;
+    string triggerKey = 4;
+}
+
+message JobScheduleResult {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    string jobKey = 1;
+    string triggerKey = 2;
+    int64 createTime = 3;
+}
+
+message JobUploadJobResp {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    repeated JobScheduleResult results = 1;
+}
+
+message JobUpdateTriggerReq {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    string triggerKey = 1;
+    mass.model.job.JobTrigger config = 2;
+}
+
+message JobListJobItemReq {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    string jobKey = 1;
+    string triggerKey = 2;
+}
+
+message JobListJobItemResp {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    repeated mass.model.job.JobItem items = 1;
+}
+
+message JobListJobTriggerReq {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    string key = 1;
+}
+
+message JobListJobTriggerResp {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    repeated mass.model.job.JobTrigger triggers = 1;
+}
+
+message JobGetScheduleReq {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    string jobKey = 1;
+    string triggerKey = 2;
+}
+
+message JobGetScheduleResp {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    mass.model.job.JobItem jobItem = 3;
+    mass.model.job.JobTrigger jobTrigger = 4;
+    mass.model.CommonStatus status = 5;
+}

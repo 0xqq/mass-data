@@ -14,11 +14,11 @@ import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, FromStringUnmarshaller, Unmarshaller}
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
-import helloscala.common.data.ApiResult
 import helloscala.common.exception.{HSBadRequestException, HSException, HSNotFoundException}
 import helloscala.common.page.{Page, PageInput}
 import helloscala.common.types.{AsInt, ObjectId}
 import helloscala.common.util.TimeUtils
+import helloscala.data.ApiResult
 
 import scala.annotation.tailrec
 import scala.collection.immutable

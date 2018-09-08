@@ -20,7 +20,7 @@ class EtlJob extends SchedulerJob {
       .future
       .map { result =>
         EtlJobResult(result)
-      }(context.scheduler.dispatcher)
+      }(context.scheduler.executionContext)
   }
 
 }

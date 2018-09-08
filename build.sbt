@@ -16,7 +16,7 @@ lazy val root = Project(id = "mass-data-root", base = file("."))
     massRdiCore,
     massConnector,
     massGovernance,
-    massScheduler,
+    massJob,
     massApiService,
     massConsole,
     massAuth,
@@ -164,13 +164,13 @@ lazy val massRdiCore = _project("mass-rdi-core")
   )
 
 // mass调度任务程序.
-lazy val massScheduler = _project("mass-scheduler")
+lazy val massJob = _project("mass-job")
   .dependsOn(massCoreExt % "compile->compile;test->test", massCore % "compile->compile;test->test")
   .enablePlugins(JavaAppPackaging)
   .settings(Packaging.settings: _*)
   .settings(Publishing.noPublish: _*)
   .settings(
-    mainClass in Compile := Some("mass.scheduler.boot.SchedulerMain"),
+    mainClass in Compile := Some("mass.job.boot.JobMain"),
     libraryDependencies ++= Seq(
       )
   )
@@ -238,7 +238,6 @@ lazy val massCore = _project("mass-core")
       _scalaXml,
       _hikariCP,
       _h2,
-      "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
       _postgresql % Test,
       _quartz % Provided
     ) ++ _catses ++ _circes ++ _akkaHttps,
@@ -252,12 +251,16 @@ lazy val massCommon = _project("mass-common")
   .settings(
     libraryDependencies ++= Seq(
       //      _swaggerAnnotation % Provided,
+      "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
       _config,
       "org.scala-lang" % "scala-library" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       _scalaJava8Compat,
       _scalatest % Test
-    ) ++ _jsons ++ _akkas ++ _logs
+    ) ++ _jsons ++ _akkas ++ _logs,
+    PB.targets in Compile := Seq(
+      scalapb.gen(flatPackage = true) -> (sourceManaged in Compile).value
+    )
   )
 
 def _project(name: String, _base: String = null) =
