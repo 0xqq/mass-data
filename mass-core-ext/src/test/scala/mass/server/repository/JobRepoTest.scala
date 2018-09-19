@@ -8,14 +8,14 @@ import helloscala.common.jackson.Jackson
 import helloscala.common.test.HelloscalaSpec
 import helloscala.common.util.TimeUtils
 import mass.core.MassSystem
-import mass.model.job.JobTrigger
+import mass.job.repository._
 import mass.server.MassSystemExtension
+import mass.slick.SlickProfile.api._
 import org.scalatest.BeforeAndAfterAll
 
 class JobRepoTest extends TestKit(ActorSystem("test")) with HelloscalaSpec with BeforeAndAfterAll {
 
-  private val massSystem: MassSystemExtension = MassSystem(system)
-    .as[MassSystemExtension]
+  private val massSystem: MassSystemExtension = MassSystem(system).as[MassSystemExtension]
 
   "JobRepositoryTest" should {
     val db = massSystem.sqlManager.slickDatabase
@@ -32,6 +32,21 @@ class JobRepoTest extends TestKit(ActorSystem("test")) with HelloscalaSpec with 
 //      println(s"saveJobTrigger: $result")
     }
 
+    "dd" in {
+      import mass.slick.AggFuncSupport.GeneralAggFunctions._
+      val q = tJobItem
+        .join(tJobSchedule)
+        .on((item, schedule) => item.key === schedule.jobKey)
+        .groupBy(_._1.key)
+        .map {
+          case (jobKey, css) =>
+            val tk = css.map { case (_, schedule) => schedule.triggerKey }
+
+            (jobKey, arrayAggEx(tk))
+        }
+//        .groupBy(_._1)
+      q.result.statements.foreach(println)
+    }
   }
 
   "JSON" should {

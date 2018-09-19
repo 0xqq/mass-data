@@ -56,5 +56,29 @@ enum CommonStatus {
 message KeyValue {
     string key = 1;
     string value = 2;
+    string show = 3;
+}
+
+message KeyValues {
+    string key = 1;
+    repeated string values = 2;
 }
 /// #KeyValue
+
+message IdValue {
+    int32 id = 1;
+    string value = 2;
+    string show = 3;
+}
+
+message TitleValue {
+    string title = 1;
+    string value = 2;
+    string show = 3;
+}
+
+message TitleIdValue {
+    string title = 1;
+    int32 value = 2;
+    string show = 3;
+}

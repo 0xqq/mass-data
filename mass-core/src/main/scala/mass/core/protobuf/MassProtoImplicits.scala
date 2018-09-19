@@ -16,6 +16,10 @@ object MassProtoImplicits {
     TypeMapper[Long, Option[OffsetDateTime]](millis =>
       if (millis == 0L) None else Some(TimeUtils.toOffsetDateTime(millis)))(
       _.map(_.toInstant.toEpochMilli).getOrElse(0L))
+  implicit val int64ValueToOffsetDateTimeOptionMapper
+    : TypeMapper[com.google.protobuf.wrappers.Int64Value, OffsetDateTime] =
+    TypeMapper[com.google.protobuf.wrappers.Int64Value, OffsetDateTime](millis =>
+      TimeUtils.toOffsetDateTime(millis.value))(c => com.google.protobuf.wrappers.Int64Value(c.toInstant.toEpochMilli))
 
   implicit val stringToOffsetDateTimeMapper: TypeMapper[String, OffsetDateTime] =
     TypeMapper[String, OffsetDateTime](TimeUtils.toOffsetDateTime)(_.toString)

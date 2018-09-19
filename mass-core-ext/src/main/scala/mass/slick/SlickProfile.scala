@@ -4,13 +4,14 @@ import java.util.concurrent.TimeUnit
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.tminglei.slickpg._
+import com.github.tminglei.slickpg.agg.PgAggFuncSupport
 import helloscala.common.Configuration
 import helloscala.common.jackson.Jackson
 import helloscala.common.types.ObjectId
 import helloscala.data.NameValue
 import javax.sql.DataSource
 import mass.model.CommonStatus
-import mass.model.job.{JobItem, JobTrigger, Program, TriggerType}
+import mass.model.job._
 import slick.ast.TypedType
 import slick.basic.Capability
 import slick.jdbc.{GetResult, JdbcCapabilities, JdbcType, SetParameter}
@@ -19,6 +20,7 @@ import scala.concurrent.duration.FiniteDuration
 
 trait SlickProfile
     extends ExPostgresProfile
+    with PgAggFuncSupport
     with PgDate2Support
     with PgHStoreSupport
     with ArraySupport
@@ -76,7 +78,13 @@ trait SlickProfile
 
   override val api: API = new API {}
 
-  trait API extends super.API with JsonImplicits with HStoreImplicits with ArrayImplicits with DateTimeImplicits {
+  trait API
+      extends super.API
+//      with GeneralAggFunctions
+      with JsonImplicits
+      with HStoreImplicits
+      with ArrayImplicits
+      with DateTimeImplicits {
     val coalesceString: Seq[Rep[_]] => Rep[String] = SimpleFunction("coalesce")
     val coalesceInt: Seq[Rep[_]] => Rep[Int] = SimpleFunction("coalesce")
     val coalesceLong: Seq[Rep[_]] => Rep[Long] = SimpleFunction("coalesce")
@@ -91,6 +99,8 @@ trait SlickProfile
       MappedColumnType.base[FiniteDuration, Long](_.toMillis, millis => FiniteDuration(millis, TimeUnit.MILLISECONDS))
     implicit val triggerTypeColumnType: JdbcType[TriggerType] =
       MappedColumnType.base[TriggerType, Int](_.value, TriggerType.fromValue)
+    implicit val jobStatusColumnType: JdbcType[JobStatus] =
+      MappedColumnType.base[JobStatus, Int](_.value, JobStatus.fromValue)
 
     implicit val jobItemColumnType: JdbcType[JobItem] =
       MappedColumnType.base[JobItem, JsonNode](Jackson.valueToTree, Jackson.treeToValue[JobItem])
@@ -141,6 +151,11 @@ trait SlickProfile
       )
       Database.forDataSource(ds, Some(maximumPoolSize), executor)
     }
+
+  }
+
+  trait AggImplicits {
+    this: ArraySupport =>
 
   }
 

@@ -1,10 +1,24 @@
 import Commons._
 import Dependencies._
+
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import Environment._
+
+buildEnv in ThisBuild := {
+  sys.props
+    .get("build.env")
+    .orElse(sys.env.get("BUILD_ENV"))
+    .flatMap {
+      case "prod"  => Some(BuildEnv.Production)
+      case "stage" => Some(BuildEnv.Stage)
+      case "test"  => Some(BuildEnv.Test)
+      case "dev"   => Some(BuildEnv.Developement)
+      case _       => None
+    }
+    .getOrElse(BuildEnv.Developement)
+}
 
 scalafmtOnCompile in ThisBuild := true
-
-//addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.7" cross CrossVersion.binary)
 
 lazy val root = Project(id = "mass-data-root", base = file("."))
   .aggregate(
@@ -241,6 +255,7 @@ lazy val massCore = _project("mass-core")
       _postgresql % Test,
       _quartz % Provided
     ) ++ _catses ++ _circes ++ _akkaHttps,
+    PB.protocVersion := "-v361",
     PB.targets in Compile := Seq(
       scalapb.gen(flatPackage = true) -> (sourceManaged in Compile).value
     )
@@ -258,6 +273,7 @@ lazy val massCommon = _project("mass-common")
       _scalaJava8Compat,
       _scalatest % Test
     ) ++ _jsons ++ _akkas ++ _logs,
+    PB.protocVersion := "-v361",
     PB.targets in Compile := Seq(
       scalapb.gen(flatPackage = true) -> (sourceManaged in Compile).value
     )

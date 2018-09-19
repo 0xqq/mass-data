@@ -127,7 +127,7 @@ trait ArraySupport extends PgArrayExtensions with PgArrayJdbcTypes { driver: Pos
 
     /** for type/name, @see [[org.postgresql.core.Oid]] and [[org.postgresql.jdbc.TypeInfoCache]]*/
     implicit val simpleUUIDListTypeMapper: JdbcType[Seq[UUID]] = new SimpleArrayJdbcType[UUID]("uuid")
-    implicit val simpleStrListTypeMapper: JdbcType[Seq[String]] = new SimpleArrayJdbcType[String]("text")
+    implicit val simpleStrSeqTypeMapper: JdbcType[Seq[String]] = new SimpleArrayJdbcType[String]("text")
     implicit val simpleLongListTypeMapper: JdbcType[Seq[Long]] = new SimpleArrayJdbcType[Long]("int8")
     implicit val simpleIntListTypeMapper: JdbcType[Seq[Int]] = new SimpleArrayJdbcType[Int]("int4")
     implicit val simpleShortListTypeMapper: JdbcType[Seq[Short]] = new SimpleArrayJdbcType[Short]("int2")

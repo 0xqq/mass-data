@@ -13,6 +13,15 @@ mass-job 架构上分三部分：应用层，核心控制层、目标层。
 - **核心控制层**：mass-scheduler的核心，任务调度、控制实现。分配任务到各Agent执行……
 - **目标层**：mass-scheduler可适配的应用业务，ETL服务器、作业工作站等
 
+## 任务类型
+
+- 代码任务（实现了SchedulerJob接口的任务，任务将和 MassData 在同一个进程或执行引擎集群上执行），代码任务可做为MassData平台的一个扩展。
+- 应用程序任务（shell、jar等可执行程序，任务将在一个独立进程或执行引擎集群上执行）。通常的应用和业务都推荐使用应用程序任务进行提交。
+
+任务配置（JobItem）属性：
+
+@@snip [JobItem](../../../../../mass-core/src/main/protobuf/mass/model/job/job.proto) { #JobItem }
+
 ## 调度类型
 
 MassData提供完善的任务调度功能，支持简单调度（时间间隔）、日历调度和事件触发三种。同时，调度任务提供 `beforeStart`、`afterStart`、`beforeStart`和`afterStop`回调函数，
@@ -22,14 +31,9 @@ MassData提供完善的任务调度功能，支持简单调度（时间间隔）
 - 日历调度：使用类似UNIX/Linux Crontab格式的策略进行基于日历时间的调度
 - 事件触发：由某个事件触发调度执行。如：某个数据同步任务完成后发出事件通知分析系统对新数据进行分析。
 
-任务配置（JobConfig.proto）属性：
+触发配置（JobTrigger）属性：
 
-@@snip [JobConfig](../../../../../mass-core/src/main/protobuf/mass/model/job/job.proto) { #JobConfig }
-
-## 任务类型
-
-- 代码任务（实现了SchedulerJob接口的任务，任务将和 MassData 在同一个进程或执行引擎集群上执行），代码任务可做为MassData平台的一个扩展。
-- 应用程序任务（shell、jar等可执行程序，任务将在一个独立进程或执行引擎集群上执行）。通常的应用和业务都推荐使用应用程序任务进行提交。
+@@snip [JobItem](../../../../../mass-core/src/main/protobuf/mass/model/job/job.proto) { #JobTrigger }
 
 ## 应用程序任务提交方式
 

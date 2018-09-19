@@ -1,14 +1,16 @@
 syntax = "proto3";
 package helloscala.data;
 
-message idValue {
+import "scalapb/scalapb.proto";
+
+message IdValue {
     int32 id = 1;
     string value = 2;
 }
 
 message NameValue {
-   string name = 1;
-   string value = 2;
+    string name = 1;
+    string value = 2;
 }
 
 message County {

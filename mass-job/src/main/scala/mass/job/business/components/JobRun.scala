@@ -1,20 +1,23 @@
 package mass.job.business.components
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import java.util.stream.Collectors
 
+import com.typesafe.scalalogging.StrictLogging
 import helloscala.common.exception.HSBadRequestException
 import helloscala.common.util.FileUtils
 import mass.core.Constants
 import mass.core.job.JobConstants
-import mass.model.job.{JobItem, Program}
-import mass.message.job.SchedulerJobResult
 import mass.job.JobSettings
-import mass.job.util.ProgramVersion
+import mass.job.util.{JobUtils, ProgramVersion}
+import mass.message.job.SchedulerJobResult
+import mass.model.job.{JobItem, Program}
 
-import scala.concurrent.{ExecutionContext, Future}
-
-object JobRun {
+/**
+ * 阻塞API
+ */
+object JobRun extends StrictLogging {
   val MAX_DEPTH = 10
 
   def runOnZip(
@@ -22,15 +25,20 @@ object JobRun {
       detail: JobItem,
       triggerKey: String,
       schedulerConfig: JobSettings
-  )(implicit ec: ExecutionContext): Future[SchedulerJobResult] = {
-    val dist = zipPath.resolve(JobConstants.DIST)
+  ): SchedulerJobResult = {
+    val zipDir = zipPath.getParent
+    val dist = zipDir.resolve(JobConstants.DIST)
     if (!Files.isDirectory(dist)) {
       Files.createDirectories(dist)
+      JobUtils.parseJobZip(zipPath.toFile, StandardCharsets.UTF_8, dist) match {
+        case Left(e) => throw e
+        case _       =>
+      }
     }
     val (commands, envs) = parseCommands(detail, schedulerConfig, dist)
     commands match {
       case _ if commands.isEmpty =>
-        Future.failed(HSBadRequestException(s"无效的程序类型，[${detail.key}:$triggerKey]。"))
+        throw HSBadRequestException(s"无效的程序类型，[${detail.key}:$triggerKey]。")
       case _ =>
 //        val logName = OffsetDateTime.now().format(TimeUtils.formatterDateTimeMillisCompact) + '.' + triggerKey
         val logDist = schedulerConfig.jobRunDir.resolve(detail.key)
@@ -51,7 +59,7 @@ object JobRun {
       detail: JobItem,
       triggerKey: String,
       schedulerConfig: JobSettings
-  )(implicit ec: ExecutionContext): Future[SchedulerJobResult] = {
+  ): SchedulerJobResult = {
     val dist = schedulerConfig.jobRunDir.resolve(detail.key)
     if (!Files.isDirectory(dist)) {
       Files.createDirectories(dist)
@@ -60,7 +68,7 @@ object JobRun {
 //    val logName = OffsetDateTime.now().format(TimeUtils.formatterDateTimeMillisCompact) + '.' + triggerKey
     commands match {
       case _ if commands.isEmpty =>
-        Future.failed(HSBadRequestException(s"无效的程序类型，[${detail.key}:$triggerKey]。"))
+        throw HSBadRequestException(s"无效的程序类型，[${detail.key}:$triggerKey]。")
       case _ =>
         run(
           commands ++ Seq(detail.programMain) ++ detail.programArgs,
@@ -78,7 +86,7 @@ object JobRun {
       extraEnvs: Seq[(String, String)] = Nil,
       outPath: Option[Path] = None,
       errPath: Option[Path] = None
-  )(implicit ec: ExecutionContext): Future[SchedulerJobResult] = Future {
+  ): SchedulerJobResult = {
     val p = FileUtils.processBuilder(commands, dist, extraEnvs, outPath, errPath)
     try {
       val exitValue = p.exitValue()

@@ -25,6 +25,7 @@ option (scalapb.options) = {
   import: "mass.core.protobuf.MassProtoImplicits._"
 };
 
+/// #JobItem
 message JobItem {
 
     // Job key，需要全局唯一。
@@ -53,8 +54,9 @@ message JobItem {
 
     int64 createdAt = 10 [(scalapb.field).type = "java.time.OffsetDateTime"];
 }
+/// #JobItem
 
-
+/// #JobTrigger
 message JobTrigger {
     // required Trigger key，需要全局唯一。
     string key = 1;
@@ -85,11 +87,23 @@ message JobTrigger {
 
     int64 createdAt = 10 [(scalapb.field).type = "java.time.OffsetDateTime"];
 }
+/// #JobTrigger
+
+enum JobStatus {
+    JOB_NORMAL = 0; // 普通
+    JOB_ENABLE = 1; // 已启用
+    JOB_RUNNING = 100; // 运行中
+    JOB_OK = 200; // 运行成功完成
+    JOB_FAILURE = 500; // 运行失败结束
+}
 
 message JobItemRow {
     string key = 1;
     JobItem config = 2;
     string creator = 3;
+    int64 scheduleCount = 4; // 被调度次数
+    JobStatus status = 5;
+    google.protobuf.Int64Value lastScheduledAt = 6 [(scalapb.field).type = "java.time.OffsetDateTime"];
     int64 createdAt = 10 [(scalapb.field).type = "java.time.OffsetDateTime"];
 }
 
@@ -101,9 +115,24 @@ message JobTriggerRow {
 }
 
 message JobScheduleRow {
-    string jobKey = 1;
-    string triggerKey = 2;
-    string description = 3;
-    CommonStatus status = 4;
-    int64 createdAt = 5 [(scalapb.field).type = "java.time.OffsetDateTime"];
+    string id = 1; // jobKey + triggerKey
+    string jobKey = 2;
+    string triggerKey = 3;
+    string description = 4;
+    CommonStatus status = 5;
+    int64 createdAt = 6 [(scalapb.field).type = "java.time.OffsetDateTime"];
 }
+
+/// #JobLog
+message JobLog {
+    string id = 1;
+    string schedule_id = 2; // jobKey + triggerKey
+    string jobKey = 3;
+    string triggerKey = 4;
+    int64 startTime = 5 [(scalapb.field).type = "java.time.OffsetDateTime"];
+    google.protobuf.Int64Value completionTime = 6 [(scalapb.field).type = "java.time.OffsetDateTime"];
+    JobStatus completionStatus = 7;
+    google.protobuf.StringValue completionValue = 8;
+    int64 createdAt = 9 [(scalapb.field).type = "java.time.OffsetDateTime"];
+}
+/// #JobLog

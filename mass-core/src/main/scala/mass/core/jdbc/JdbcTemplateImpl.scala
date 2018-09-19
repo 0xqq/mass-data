@@ -1,13 +1,6 @@
-/*
- * Copyright (c) Yangbajing 2018
- *
- * This is the custom License of Yangbajing
- */
-
 package mass.core.jdbc
 
-import java.sql.{Connection, PreparedStatement, ResultSet, SQLException, SQLWarning, Statement}
-import java.time.LocalDateTime
+import java.sql.{Connection, ResultSet}
 import java.util.Objects
 
 import com.typesafe.scalalogging.Logger
@@ -24,23 +17,17 @@ private[jdbc] class JdbcTemplateImpl(
     val dataSource: DataSource,
     _useTransaction: Boolean,
     ignoreWarnings: Boolean,
-    _allowPrintLog: Boolean)
-    extends JdbcTemplate {
-
-  //  def this(dataSource: DataSource) {
-  //    this(dataSource, true, true, true)
-  //  }
+    _allowPrintLog: Boolean
+) extends JdbcTemplate {
 
   private[this] val logger = Logger(LoggerFactory.getLogger(getClass.getName))
 
-  private[this] def needUseTransaction(implicit conn: Connection = JdbcTemplate.EmptyConnection): Boolean =
-    //    if (conn != JdbcTemplate.EmptyConnection) true else _useTransaction
+  private[this] def needUseTransaction(implicit conn: Connection = JdbcTemplate.EmptyConnection): Boolean = //    if (conn != JdbcTemplate.EmptyConnection) true else _useTransaction
     conn != JdbcTemplate.EmptyConnection || _useTransaction
 
-  private[this] def allowPrintLog: Boolean =
-    _allowPrintLog && logger.underlying.isDebugEnabled
+  private[this] def allowPrintLog: Boolean = _allowPrintLog && logger.underlying.isDebugEnabled
 
-  override def withTransaction[R](func: (Connection) => R): R = {
+  override def withTransaction[R](func: Connection => R): R = {
     val conn = dataSource.getConnection
     val isCommit = conn.getAutoCommit
     conn.setAutoCommit(false)
@@ -231,125 +218,8 @@ private[jdbc] class JdbcTemplateImpl(
     assert(Objects.nonNull(pscFunc), "Connection => PreparedStatement must not be null")
     assert(Objects.nonNull(actionFunc), "PreparedStatement => R must not be null")
 
-    val con =
-      if (externalConn == null) dataSource.getConnection else externalConn
-    var pstmt: PreparedStatement = null
-    val isAutoCommit = con.getAutoCommit
-    var commitSuccess = false
-    var beginTime: LocalDateTime = null
-    try {
-      if (externalConn == null && useTransaction) {
-        con.setAutoCommit(false)
-      }
-
-      if (allowPrintLog) {
-        beginTime = LocalDateTime.now()
-      }
-
-      val connection = con
-      pstmt = pscFunc.apply(connection)
-
-      val result = actionFunc.apply(pstmt)
-
-      handleWarnings(pstmt)
-
-      commitSuccess = true
-      result
-    } catch {
-      case sqlEx: SQLException =>
-        //        if (logger.underlying.isDebugEnabled) {
-        //          val metaData = pstmt.getParameterMetaData
-        //          val parameterTypes = (1 to metaData.getParameterCount).map(idx => metaData.getParameterTypeName(idx))
-        //          handleSqlLogs(beginTime, parameterTypes, pscFunc, actionFunc)
-        //        }
-        throw sqlEx
-    } finally {
-      val parameterTypes =
-        try {
-          if (allowPrintLog) {
-            val metaData = pstmt.getParameterMetaData
-            (1 to metaData.getParameterCount).map(idx => metaData.getParameterTypeName(idx))
-          } else
-            Nil
-        } catch {
-          case e: Exception =>
-            //            if (allowPrintLog) {
-            handleSqlLogs(beginTime, Nil, pscFunc, actionFunc)
-            //              logger.warn("获取parameterTypes异常", e)
-            //            }
-            Nil
-        }
-
-      JdbcUtils.closeStatement(pstmt)
-
-      if (externalConn == null) {
-        if (useTransaction) {
-          try {
-            if (commitSuccess) {
-              con.commit()
-            } else {
-              con.rollback()
-            }
-          } catch {
-            case ex: Exception =>
-              logger.error("提交或回滚事物失败", ex)
-          }
-          con.setAutoCommit(isAutoCommit)
-        }
-        // XXX 当外部没有隐式Connection传入时操作事物及连接
-        JdbcUtils.closeConnection(con)
-      }
-
-      if (allowPrintLog) {
-        handleSqlLogs(beginTime, parameterTypes, pscFunc, actionFunc)
-      }
-    }
+    val con = if (externalConn == null) dataSource.getConnection else externalConn
+    JdbcUtils.execute(pscFunc, actionFunc, ignoreWarnings, allowPrintLog, useTransaction, externalConn == null)(con)
   }
 
-  private def handleSqlLogs(
-      beginTime: LocalDateTime,
-      parameterTypes: Seq[String],
-      pscFunc: ConnectionPreparedStatementCreator,
-      actionFunc: PreparedStatementAction[_]): Unit = {
-    val dua = java.time.Duration.between(beginTime, LocalDateTime.now())
-    val sql = pscFunc match {
-      case pscFuncImpl: ConnectionPreparedStatementCreatorImpl =>
-        pscFuncImpl.getSql
-      case _ => ""
-    }
-
-    var dumpParameters = ""
-    if (parameterTypes.nonEmpty) {
-      val parameters = actionFunc match {
-        case actionFuncImpl: PreparedStatementActionImpl[_] =>
-          parameterTypes.zip(actionFuncImpl.args).map {
-            case (paramType, value) => s"\t\t$paramType: $value"
-          }
-        case _ =>
-          parameterTypes.map(paramType => s"\t\t$paramType:")
-      }
-      dumpParameters = "\n" + parameters.mkString("\n")
-    }
-
-    logger.info(s"[$dua] $sql $dumpParameters")
-  }
-
-  private def handleWarnings(stmt: Statement): Unit =
-    if (ignoreWarnings) {
-      if (allowPrintLog) {
-        var warningToLog = stmt.getWarnings
-        while (warningToLog != null) {
-          logger.warn(
-            "SQLWarning ignored: SQL state '" + warningToLog.getSQLState + "', error code '" + warningToLog.getErrorCode + "', message [" + warningToLog.getMessage + "]")
-          warningToLog = warningToLog.getNextWarning
-        }
-      }
-    } else {
-      handleWarnings(stmt.getWarnings)
-    }
-
-  @inline
-  @throws[SQLWarning]
-  protected def handleWarnings(warning: SQLWarning): Unit =
-    if (warning != null) throw warning
 }

@@ -7,9 +7,8 @@ import helloscala.common.exception.{HSException, HSNotFoundException}
 import helloscala.common.types.ObjectId
 import helloscala.common.util.StringUtils
 import mass.core.job.{JobConstants, SchedulerContext, SchedulerJob}
-import mass.job.model.JobLog
 import mass.job.repository.JobRepo
-import mass.model.CommonStatus
+import mass.model.job.{JobLog, JobStatus}
 import org.quartz.{Job, JobExecutionContext}
 
 import scala.collection.JavaConverters._
@@ -24,9 +23,9 @@ private[job] class JobClassJob extends Job with StrictLogging {
     val db = JobSystem.instance.massSystem.sqlManager
     val jobKey = context.getJobDetail.getKey.getName
     val triggerKey = context.getTrigger.getKey.getName
-    val logId = ObjectId.get()
+    val logId = ObjectId.getString()
     val now = OffsetDateTime.now()
-    val log = JobLog(logId, jobKey, triggerKey, now, None, CommonStatus.Continue, None, now)
+    val log = JobLog(logId, jobKey + triggerKey, jobKey, triggerKey, now, None, JobStatus.JOB_RUNNING, None, now)
     db.runTransaction(JobRepo.insertJobLog(log))
 
     val clz = Class.forName(jobClass)
@@ -35,27 +34,25 @@ private[job] class JobClassJob extends Job with StrictLogging {
       db.run(JobRepo.findJob(jobKey, triggerKey))
         .flatMap {
           case Some((jobItem, jobTrigger)) =>
-            val data =
-              (context.getJobDetail.getJobDataMap.asScala.mapValues(_.toString) - JobConstants.JOB_CLASS).toMap
-            val ctx =
-              SchedulerContext(jobItem.config, jobTrigger.config, data, jobItem.config.resources, JobSystem.instance)
+            val data = (context.getJobDetail.getJobDataMap.asScala.mapValues(_.toString) - JobConstants.JOB_CLASS).toMap
+            val config = jobItem.config.get
+            val ctx = SchedulerContext(config, jobTrigger.config.get, data, config.resources, JobSystem.instance)
             clz.newInstance().asInstanceOf[SchedulerJob].run(ctx)
           case _ => Future.failed(HSNotFoundException(s"Job[$jobKey:$triggerKey]未找到"))
         }
         .map { result =>
           val msg = s"调度任务执行成功：$result。"
           logger.info(msg)
-          CommonStatus.OK -> msg
+          JobStatus.JOB_OK -> msg
         }
         .recover {
           case e: HSException =>
-            val errCode = e.getErrCode
-            CommonStatus.values.find(_.value == errCode).getOrElse(CommonStatus.InternalServerError) -> e.getErrMsg
-          case e => CommonStatus.InternalServerError -> s"调度任务执行错误：${e.toString}。"
+            JobStatus.JOB_FAILURE -> e.getErrMsg
+          case e => JobStatus.JOB_FAILURE -> s"调度任务执行错误：${e.toString}。"
         }
         .foreach {
           case (status, msg) =>
-            if (status.value >= CommonStatus.BadRequest.value) {
+            if (status != JobStatus.JOB_OK) {
               logger.error(msg)
             }
             status -> msg
@@ -64,7 +61,7 @@ private[job] class JobClassJob extends Job with StrictLogging {
     } else {
       val msg = s"未知的任务类型：${clz.getName}，需要 ${classOf[SchedulerJob].getName} 的子类。"
       logger.warn(msg)
-      db.runTransaction(JobRepo.completionJobLog(logId, OffsetDateTime.now(), CommonStatus.Conflict, msg))
+      db.runTransaction(JobRepo.completionJobLog(logId, OffsetDateTime.now(), JobStatus.JOB_FAILURE, msg))
     }
   }
 

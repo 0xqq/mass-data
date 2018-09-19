@@ -7,20 +7,31 @@ import akka.pattern._
 import com.typesafe.scalalogging.StrictLogging
 import helloscala.common.page.Page
 import mass.http.AbstractRoute
-import mass.message.job._
 import mass.job.business.Services
 import mass.job.business.actors.JobActor
 import mass.job.model.JobUploadJobReq
+import mass.message.job._
 
 class JobRoute(services: Services) extends AbstractRoute with StrictLogging {
   import services._
 
   override def route: Route = pathPrefix("job") {
-    pageRoute ~
+    pathEndOrSingleSlash {
+      createJobRoute
+    } ~
+      pageRoute ~
       itemByKeyRoute ~
       triggerByKeyRoute ~
       triggerPutRoute ~
-      uploadJobPostRoute
+      uploadJobPostRoute ~
+      optionRoute
+  }
+
+  def createJobRoute: Route = {
+    import mass.http.JacksonSupport._
+    entity(as[JobCreateReq]) { req =>
+      futureComplete((master ? JobActor.jobMessage(req)).mapTo[JobGetScheduleResp])
+    }
   }
 
   def itemByKeyRoute: Route = pathGet("item" / Segment) { key =>
@@ -51,13 +62,16 @@ class JobRoute(services: Services) extends AbstractRoute with StrictLogging {
     extractExecutionContext { implicit ec =>
       storeUploadedFile("job", createTempFileFunc(services.jobSystem.massSystem.tempDir)) {
         case (fileInfo, file) =>
-          val future =
+          futureComplete(
             (master ? JobActor.jobMessage(JobUploadJobReq(file, fileInfo.fileName, fileInfo.contentType.charset)))
-              .andThen { case _ => Files.deleteIfExists(file.toPath) }
-          onSuccess(future) { result =>
-            objectComplete(result)
-          }
+              .andThen { case _ => Files.deleteIfExists(file.toPath) })
       }
+    }
+  }
+
+  def optionRoute: Route = pathPrefix("option") {
+    pathGet("all") {
+      futureComplete(master ? JobActor.jobMessage(JobGetAllOptionReq()))
     }
   }
 

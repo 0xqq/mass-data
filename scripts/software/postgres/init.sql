@@ -33,29 +33,35 @@ immutable;
 -- #ddl-job
 drop table if exists public.job_item;
 create table public.job_item (
-  key        varchar(128) primary key,
-  config     jsonb       not null,
-  creator    varchar(36) not null,
-  created_at timestamptz not null
+  key            varchar(128) primary key,
+  config         jsonb       not null,
+  creator        varchar(36) not null,
+  schedule_count bigint      not null default 0,
+  status         int         not null default 0,
+  last_scheduled_at timestamptz,
+  created_at     timestamptz not null
 );
 
 drop table if exists public.job_trigger;
 create table public.job_trigger (
   key        varchar(128) not null primary key,
-  config     jsonb       not null,
-  creator    varchar(36) not null,
-  created_at timestamptz not null
+  config     jsonb        not null,
+  creator    varchar(36)  not null,
+  created_at timestamptz  not null
 );
 
 drop table if exists public.job_schedule;
 create table public.job_schedule (
+  id          varchar(256) not null,
   job_key     varchar(128) not null,
   trigger_key varchar(128) not null,
   description text         not null,
   status      int          not null default 1,
   created_at  timestamptz  not null,
-  constraint job_schedule_pk primary key (job_key, trigger_key)
+  constraint job_schedule_pk primary key (id)
 );
+create unique index job_schedule_job_key_trigger_key_uidx
+  on job_schedule (job_key, trigger_key);
 comment on table public.job_schedule
 is '调度任务，job_item与job_trigger关联后实际执行';
 comment on column public.job_schedule.status
@@ -63,14 +69,18 @@ is '调度任务闫：0 未启用，1 启用';
 
 drop table if exists public.job_log;
 create table public.job_log (
-  id                char(24) primary key,
+  id                char(24)     not null,
+  schedule_id       varchar(256) not null,
   job_key           varchar(128), -- FK job_item.key
   trigger_key       varchar(128), -- FK job_trigger.key
-  start_time        timestamptz not null,
+  start_time        timestamptz  not null,
   completion_time   timestamptz,
   completion_status int,
-  completion_value  text
+  completion_value  text,
+  constraint job_log_pk primary key (id)
 );
+create index job_log_schedule_id_idx
+  on job_log (schedule_id);
 -- #ddl-job
 
 -- #ddl-workflow

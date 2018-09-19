@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object JobUtils extends StrictLogging {
 
-  case class JobZipInternal private (configs: Vector[JobConfig], entries: Vector[Path])
+  case class JobZipInternal private (configs: Vector[JobCreateReq], entries: Vector[Path])
 
   def uploadJob(settings: JobSettings, req: JobUploadJobReq)(implicit ec: ExecutionContext): Future[JobZip] = Future {
     val sha256 = DigestUtils.sha256Hex(req.file.toPath)
@@ -72,7 +72,7 @@ object JobUtils extends StrictLogging {
     }
   }
 
-  def parseJobConf(content: String): Either[Throwable, JobConfig] = Utils.either {
+  def parseJobConf(content: String): Either[Throwable, JobCreateReq] = Utils.either {
     val now = OffsetDateTime.now()
     val conf = Configuration.parseString(content)
 
@@ -111,9 +111,9 @@ object JobUtils extends StrictLogging {
         ))
     } else None
 
-    JobConfig(Some(jobItem), maybeTrigger)
+    JobCreateReq(Some(jobItem), maybeTrigger)
   }
 
 }
 
-case class JobZip(zipPath: Path, configs: Vector[JobConfig], entries: Vector[Path])
+case class JobZip(zipPath: Path, configs: Vector[JobCreateReq], entries: Vector[Path])

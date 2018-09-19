@@ -50,7 +50,7 @@ object Dependencies {
     "com.lightbend.akka.management" %% "akka-management-cluster-http" % "0.17.0"
   ).map(_.excludeAll(ExclusionRule("com.typesafe.akka")).exclude("org.scala-lang", "scala-library"))
 
-  val versionAkkaHttp = "10.1.4"
+  val versionAkkaHttp = "10.1.5"
   val _akkaHttpCore = "com.typesafe.akka" %% "akka-http-core" % versionAkkaHttp
 
   val _akkaHttps = Seq(
@@ -250,13 +250,13 @@ object Dependencies {
   private val versionQuartz = "2.2.3"
   val _quartz = "org.quartz-scheduler" % "quartz" % versionQuartz
 
-  val _postgresql = "org.postgresql" % "postgresql" % "42.2.4"
+  val _postgresql = "org.postgresql" % "postgresql" % "42.2.5"
 
   val _mysql = "mysql" % "mysql-connector-java" % "6.0.6"
 
   val _mssql = "com.microsoft.sqlserver" % "mssql-jdbc" % "6.4.0.jre8"
 
-  val _hikariCP = "com.zaxxer" % "HikariCP" % "3.2.0" // "2.7.9"
+  val _hikariCP = "com.zaxxer" % "HikariCP" % "3.2.0"
 
   val _protobuf = "com.google.protobuf" % "protobuf-java" % "3.6.1"
 

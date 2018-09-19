@@ -1,19 +1,23 @@
 syntax = "proto3";
 package mass.message.job;
 
-//import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 import "scalapb/scalapb.proto";
 import "mass/model/define.proto";
 import "mass/model/job/job.proto";
 
-// #JobConfig
-message JobConfig {
+option (scalapb.options) = {
+  import: "mass.core.protobuf.MassProtoImplicits._"
+};
+
+message JobCreateReq {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
     mass.model.job.JobItem item = 1;
     mass.model.job.JobTrigger trigger = 2;
     // 描述
     string description = 3;
 }
-// #JobConfig
 
 message SchedulerJobResult {
     option (scalapb.message).extends = "mass.core.model.scheduler.SchedulerJobResultTrait";
@@ -35,13 +39,16 @@ message JobPageReq {
     string triggerKey = 4;
 }
 
+/// #JobScheduleResult
+// 创建Job结果
 message JobScheduleResult {
     option (scalapb.message).extends = "mass.message.job.JobMessage";
 
     string jobKey = 1;
-    string triggerKey = 2;
-    int64 createTime = 3;
+    google.protobuf.StringValue triggerKey = 2;
+    int64 createTime = 3 [(scalapb.field).type = "scala.Option[java.time.OffsetDateTime]"];
 }
+/// #JobScheduleResult
 
 message JobUploadJobResp {
     option (scalapb.message).extends = "mass.message.job.JobMessage";
@@ -53,7 +60,13 @@ message JobUpdateTriggerReq {
     option (scalapb.message).extends = "mass.message.job.JobMessage";
 
     string triggerKey = 1;
-    mass.model.job.JobTrigger config = 2;
+    mass.model.job.JobTrigger trigger = 2;
+}
+
+message JobUpdateTriggerResp {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+
+    mass.model.job.JobTrigger trigger = 1;
 }
 
 message JobListJobItemReq {
@@ -81,6 +94,18 @@ message JobListJobTriggerResp {
     repeated mass.model.job.JobTrigger triggers = 1;
 }
 
+message JobPageResp {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+    option (scalapb.message).extends = "helloscala.common.page.PageResult[mass.model.job.JobItemRow]";
+
+    repeated mass.model.job.JobItemRow content = 1;
+    int64 totalElements = 2;
+    repeated mass.model.KeyValues jobKey2Triggerkeys = 3;
+    repeated mass.model.job.JobTrigger triggers = 4;
+    int32 page = 5;
+    int32 size = 6;
+}
+
 message JobGetScheduleReq {
     option (scalapb.message).extends = "mass.message.job.JobMessage";
 
@@ -94,4 +119,20 @@ message JobGetScheduleResp {
     mass.model.job.JobItem jobItem = 3;
     mass.model.job.JobTrigger jobTrigger = 4;
     mass.model.CommonStatus status = 5;
+}
+
+message JobGetAllOptionReq {
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+}
+message JobGetAllOptionResp {
+    message ProgramVersionItem {
+        int32 programId = 1;
+        repeated mass.model.TitleValue versions = 2;
+    }
+
+    option (scalapb.message).extends = "mass.message.job.JobMessage";
+    repeated mass.model.TitleIdValue program = 1; // 作业程序类型
+    repeated mass.model.TitleIdValue triggerType = 2; // 作业触发器类型
+    repeated ProgramVersionItem programVersion = 3;
+    repeated mass.model.TitleIdValue jobStatus = 4;
 }

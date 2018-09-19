@@ -15,6 +15,7 @@ import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, FromStringUnma
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import helloscala.common.exception.{HSBadRequestException, HSException, HSNotFoundException}
+import helloscala.common.jackson.Jackson
 import helloscala.common.page.{Page, PageInput}
 import helloscala.common.types.{AsInt, ObjectId}
 import helloscala.common.util.TimeUtils
@@ -23,6 +24,7 @@ import helloscala.data.ApiResult
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 trait IAppIdKey {
   def appId: String
@@ -289,14 +291,39 @@ trait AbstractRoute extends Directives {
       appIdKeyTokenConfig: IAppIdKey,
       sourceQueue: AkkaHttpSourceQueue): Route =
     extractRequestContext { ctx =>
-      val req = ctx.request
-      val request =
-        HttpUtils.applyApiToken(req.copy(uri = uri.withQuery(req.uri.query())),
-                                appIdKeyTokenConfig.appId,
-                                appIdKeyTokenConfig.appKey)
+      val request = HttpUtils.applyApiToken(ctx.request.copy(uri = uri.withQuery(ctx.request.uri.query())),
+                                            appIdKeyTokenConfig.appId,
+                                            appIdKeyTokenConfig.appKey)
       val future = HttpUtils.hostRequest(request)(sourceQueue.httpSourceQueue, ctx.executionContext)
       onSuccess(future) { response =>
         complete(response)
+      }
+    }
+
+  def reflectEntity[T](implicit ev1: ClassTag[T]): Directive1[T] =
+    extract(_.request.entity.contentType).flatMap { contentType =>
+      contentType.mediaType match {
+        case MediaTypes.`application/json` =>
+          import JacksonSupport._
+          entity(as[T])
+
+        case MediaTypes.`application/x-www-form-urlencoded` =>
+          formFieldMultiMap.flatMap { fields =>
+            val bean = fields.mapValues {
+              case elem :: Nil => elem
+              case list        => list
+            }
+            provide(Jackson.defaultObjectMapper.convertValue(bean, ev1.runtimeClass).asInstanceOf[T])
+          }
+
+        case MediaTypes.`application/xml` =>
+          // TODO 这里还可以添加xml的处理
+          ???
+
+        case _ =>
+          reject(
+            UnsupportedRequestContentTypeRejection(
+              Set(ContentTypes.`application/json`, ContentTypeRange(MediaTypes.`application/x-www-form-urlencoded`))))
       }
     }
 

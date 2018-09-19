@@ -40,7 +40,7 @@ class JobSystem private (
   import org.quartz._
   import org.quartz.impl.StdSchedulerFactory
 
-  private[job] val scheduler: org.quartz.Scheduler =
+  private val scheduler: org.quartz.Scheduler =
     new StdSchedulerFactory(configuration.get[Properties]("mass.core.job.properties")).getScheduler
   val jobSettings = JobSettings(configuration)
 
@@ -78,22 +78,24 @@ class JobSystem private (
 
   def schedulerJob(
       jobItem: JobItem,
-      triggerConf: JobTrigger,
+      jobTrigger: JobTrigger,
       className: String,
       data: Option[Map[String, String]],
       replace: Boolean = true): OffsetDateTime =
-    triggerConf.triggerType match {
-      case TriggerType.EVENT => handleTriggerEventJob(jobItem, triggerConf)
+    jobTrigger.triggerType match {
+      case TriggerType.EVENT =>
+        handleTriggerEventJob(jobItem, jobTrigger)
       case _ =>
         val jobDetail = Option(scheduler.getJobDetail(JobKey.jobKey(jobItem.key))) getOrElse
           buildJobDetail(jobItem, className, data)
-        val trigger = Option(scheduler.getTrigger(TriggerKey.triggerKey(triggerConf.key))) getOrElse
-          buildTrigger(triggerConf)
+        val trigger = Option(scheduler.getTrigger(TriggerKey.triggerKey(jobTrigger.key))) getOrElse
+          buildTrigger(jobTrigger)
         schedulerJob(jobDetail, trigger, replace)
     }
 
   def schedulerJob(jobDetail: JobDetail, trigger: Trigger, replace: Boolean): OffsetDateTime = {
     scheduler.scheduleJob(jobDetail, java.util.Collections.singleton(trigger), replace)
+    logger.info(s"启动作业：${jobDetail.getKey}:${trigger.getKey}, $replace")
     OffsetDateTime.now()
   }
 

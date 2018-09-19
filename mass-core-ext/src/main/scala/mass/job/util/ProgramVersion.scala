@@ -9,13 +9,6 @@ sealed trait ProgramVersion {
 }
 
 object ProgramVersion {
-  private var _values = Vector[ProgramVersion]()
-  def values: Vector[ProgramVersion] = _values
-
-  private def register(v: ProgramVersion): Unit = {
-    _values = _values :+ v
-  }
-
   case object Scala211 extends ProgramVersion {
     override val NAME: Program = Program.SCALA
     override val VERSION: String = "2.11"
@@ -29,55 +22,49 @@ object ProgramVersion {
   case object Java7 extends ProgramVersion {
     override val NAME: Program = Program.JAVA
     override val VERSION: String = "7"
-    register(this)
   }
   case object Java8 extends ProgramVersion {
     override val NAME: Program = Program.JAVA
     override val VERSION: String = "8"
-    register(this)
   }
   case object Python2_7 extends ProgramVersion {
     override val NAME: Program = Program.PYTHON
     override val VERSION: String = "2.7"
-    register(this)
   }
   case object Python3_6 extends ProgramVersion {
     override val NAME: Program = Program.PYTHON
     override val VERSION: String = "3.6"
-    register(this)
   }
   case object Bash extends ProgramVersion {
     override val NAME: Program = Program.SH
-    override val VERSION: String = "bash"
-    override val CLI: String = VERSION
-    register(this)
+    override val VERSION: String = "Bash"
+    override val CLI: String = "bash"
   }
   case object Sh extends ProgramVersion {
     override val NAME: Program = Program.SH
     override val VERSION: String = "sh"
-    override val CLI: String = VERSION
-    register(this)
+    override val CLI: String = "sh"
   }
   case object SqlJdbc extends ProgramVersion {
     override val NAME: Program = Program.SQL
-    override val VERSION: String = "jdbc"
+    override val VERSION: String = "JDBC"
     override val CLI: String = "mass-jdbc-cli"
   }
   case object SqlPostgres extends ProgramVersion {
     override val NAME: Program = Program.SQL
-    override val VERSION: String = "postgresql"
+    override val VERSION: String = "PostgreSQL"
     override val CLI: String = "psql"
-    register(this)
   }
   case object SqlMySQL extends ProgramVersion {
     override val NAME: Program = Program.SQL
-    override val VERSION: String = "mysql"
+    override val VERSION: String = "MySQL"
     override val CLI: String = "mysql"
-    register(this)
   }
 
+  val values = Vector(Scala212, Scala211, Java8, Java7, Python3_6, Python2_7, Bash, Sh, SqlJdbc, SqlPostgres, SqlMySQL)
+
   def get(program: Program, version: String): Option[ProgramVersion] = {
-    ProgramVersion.values
+    values
       .find(pv => pv.NAME == program && pv.VERSION == version)
       .orElse(Option(program match {
         case Program.SCALA  => Scala212
