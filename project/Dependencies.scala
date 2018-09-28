@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val versionScala = "2.12.6"
+  val versionScala = "2.12.7"
   val versionScalaLib = "2.12"
 
   val _scalaXml = ("org.scala-lang.modules" %% "scala-xml" % "1.1.0")

@@ -14,17 +14,16 @@ import scala.concurrent.Future
 
 class JobServer(jobSystem: JobSystem) extends HSAkkaHttpServer {
 
-  override def actorSystem: ActorSystem = jobSystem.massSystem.system
+  override def actorSystem: ActorSystem = jobSystem.system
 
   override def actorMaterializer: ActorMaterializer =
-    ActorMaterializer()(jobSystem.massSystem.system)
+    ActorMaterializer()(jobSystem.system)
 
   override val hlServerValue: String = "mass-scheduler"
 
   val services = new Services(jobSystem, List(JobActor.props(jobSystem)))
 
-  override def configuration: Configuration =
-    jobSystem.massSystem.configuration
+  override def configuration: Configuration = jobSystem.configuration
 
   override def routes: AbstractRoute = new Routes(services)
 

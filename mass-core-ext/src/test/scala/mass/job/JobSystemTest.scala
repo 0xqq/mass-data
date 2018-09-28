@@ -3,8 +3,6 @@ package mass.job
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import helloscala.common.test.HelloscalaSpec
-import mass.core.MassSystem
-import mass.server.MassSystemExtension
 import org.scalatest.BeforeAndAfterAll
 
 class JobSystemTest extends TestKit(ActorSystem("mass")) with HelloscalaSpec with BeforeAndAfterAll {
@@ -13,7 +11,7 @@ class JobSystemTest extends TestKit(ActorSystem("mass")) with HelloscalaSpec wit
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    jobSystem = JobSystem(MassSystem(system).as[MassSystemExtension])
+    jobSystem = JobSystem(system)
   }
 
   override protected def afterAll(): Unit =

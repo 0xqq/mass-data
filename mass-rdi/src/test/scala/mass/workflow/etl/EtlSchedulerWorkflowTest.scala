@@ -3,11 +3,8 @@ package mass.workflow.etl
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import helloscala.common.test.HelloscalaSpec
-import mass.connector.ConnectorSystem
-import mass.core.MassSystem
-import mass.rdp.RdpSystem
 import mass.job.JobSystem
-import mass.server.MassSystemExtension
+import mass.rdp.RdpSystem
 import org.scalatest.BeforeAndAfterAll
 
 class EtlSchedulerWorkflowTest extends TestKit(ActorSystem("etl-test")) with HelloscalaSpec with BeforeAndAfterAll {
@@ -17,9 +14,8 @@ class EtlSchedulerWorkflowTest extends TestKit(ActorSystem("etl-test")) with Hel
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    val massSystem = MassSystem("mass", system).as[MassSystemExtension]
-    rdpSystem = RdpSystem("rdp-test", massSystem, ConnectorSystem("connector", massSystem))
-    jobSystem = JobSystem(massSystem)
+    rdpSystem = RdpSystem(system)
+    jobSystem = JobSystem(system)
     //    etlWorkflow = EtlWorkflow.fromXML(TestStub.graphXmlConfig, rdpSystem).get
   }
 

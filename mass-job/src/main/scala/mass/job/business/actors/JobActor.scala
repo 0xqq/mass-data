@@ -45,7 +45,7 @@ trait JobService extends StrictLogging {
 
   val jobSystem: JobSystem
 
-  private val db = jobSystem.massSystem.sqlManager
+  private val db = jobSystem.massExSystem.sqlManager
 
   def handleGetItem(req: JobListJobItemReq)(implicit ec: ExecutionContext): Future[JobListJobItemResp] = {
     db.run(JobRepo.listJobItem(req)).map(list => JobListJobItemResp(list.map(_.config.get)))

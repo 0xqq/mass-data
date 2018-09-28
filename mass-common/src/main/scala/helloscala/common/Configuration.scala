@@ -240,11 +240,9 @@ object Configuration {
 
   def apply(): Configuration = Configuration(ConfigFactory.load())
 
-  def apply(props: Properties): Configuration =
-    ConfigurationHelper.fromProperties(props)
+  def apply(props: Properties): Configuration = ConfigurationHelper.fromProperties(props)
 
-  def parseString(content: String): Configuration =
-    Configuration(ConfigFactory.parseString(content))
+  def parseString(content: String): Configuration = Configuration(ConfigFactory.parseString(content))
 
 }
 

@@ -20,7 +20,7 @@ import scala.collection.{immutable, mutable}
 
 object JdbcUtils extends StrictLogging {
 
-  def columnLables(metadata: ResultSetMetaData): immutable.IndexedSeq[String] =
+  def columnLabels(metadata: ResultSetMetaData): immutable.IndexedSeq[String] =
     (1 to metadata.getColumnCount).map(i => Option(metadata.getColumnLabel(i)).getOrElse(metadata.getColumnName(i)))
 
   @throws[SQLException]("if thrown by the JDBC API")

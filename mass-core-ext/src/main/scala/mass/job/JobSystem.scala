@@ -4,41 +4,37 @@ import java.nio.file.Files
 import java.time.OffsetDateTime
 import java.util.Properties
 
-import akka.actor.ActorSystem
+import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.scalalogging.LazyLogging
 import helloscala.common.Configuration
 import helloscala.common.exception.HSBadRequestException
 import mass.core.job.{JobConstants, SchedulerJob, SchedulerSystemRef}
+import mass.extension.MassExSystem
 import mass.model.job.{JobItem, JobTrigger, TriggerType}
-import mass.server.MassSystemExtension
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
-object JobSystem {
-  private var _instance: JobSystem = _
-
-  def instance: JobSystem = _instance
-
-  def apply(massSystem: MassSystemExtension): JobSystem =
-    apply(massSystem.name, massSystem, true)
-
-  def apply(name: String, massSystem: MassSystemExtension, waitForJobsToComplete: Boolean): JobSystem = {
-    _instance = new JobSystem(name, massSystem, waitForJobsToComplete)
-    _instance.init()
-    _instance
-  }
-
+object JobSystem extends ExtensionId[JobSystem] with ExtensionIdProvider {
+  override def createExtension(system: ExtendedActorSystem): JobSystem = new JobSystem(system, true)
+  override def lookup(): ExtensionId[_ <: Extension] = JobSystem
 }
 
 class JobSystem private (
-    val name: String,
-    val massSystem: MassSystemExtension,
+    val system: ExtendedActorSystem,
     val waitForJobsToComplete: Boolean
 ) extends SchedulerSystemRef
+    with Extension
     with LazyLogging {
   import org.quartz._
   import org.quartz.impl.StdSchedulerFactory
+
+  def name: String = system.name
+
+  val massExSystem = MassExSystem(system)
+  logger.info("massExSystem: " + massExSystem)
+
+  def configuration: Configuration = massExSystem.connection
 
   private val scheduler: org.quartz.Scheduler =
     new StdSchedulerFactory(configuration.get[Properties]("mass.core.job.properties")).getScheduler
@@ -54,17 +50,13 @@ class JobSystem private (
     }
 
     scheduler.start()
-    massSystem.system.registerOnTermination {
+    system.registerOnTermination {
       scheduler.shutdown(waitForJobsToComplete)
     }
   }
 
   // TODO 定义 SchedulerSystem 自有的线程执行器
-  implicit override def executionContext: ExecutionContext = massSystem.system.dispatcher
-
-  override def system: ActorSystem = massSystem.system
-
-  override def configuration: Configuration = massSystem.configuration
+  implicit override def executionContext: ExecutionContext = system.dispatcher
 
   def rescheduleJob(conf: JobTrigger, jobItems: Seq[JobItem], className: String): OffsetDateTime = {
     import scala.collection.JavaConverters._
@@ -147,6 +139,5 @@ class JobSystem private (
       .build()
   }
 
-  override def toString: String =
-    s"SchedulerSystem($name, $massSystem, $waitForJobsToComplete)"
+  override def toString: String = s"SchedulerSystem($name, $system, $waitForJobsToComplete)"
 }

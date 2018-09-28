@@ -18,6 +18,8 @@ buildEnv in ThisBuild := {
     .getOrElse(BuildEnv.Developement)
 }
 
+scalaVersion in ThisBuild := Dependencies.versionScala
+
 scalafmtOnCompile in ThisBuild := true
 
 lazy val root = Project(id = "mass-data-root", base = file("."))

@@ -7,15 +7,14 @@ import akka.testkit.TestKit
 import helloscala.common.jackson.Jackson
 import helloscala.common.test.HelloscalaSpec
 import helloscala.common.util.TimeUtils
-import mass.core.MassSystem
+import mass.extension.MassExSystem
 import mass.job.repository._
-import mass.server.MassSystemExtension
 import mass.slick.SlickProfile.api._
 import org.scalatest.BeforeAndAfterAll
 
 class JobRepoTest extends TestKit(ActorSystem("test")) with HelloscalaSpec with BeforeAndAfterAll {
 
-  private val massSystem: MassSystemExtension = MassSystem(system).as[MassSystemExtension]
+  private val massSystem: MassExSystem = MassExSystem(system)
 
   "JobRepositoryTest" should {
     val db = massSystem.sqlManager.slickDatabase

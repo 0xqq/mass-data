@@ -11,7 +11,10 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
+import helloscala.common.jackson.Jackson
 import mass.core.job.SchedulerJob
+import mass.model.job.JobItem
+import mass.session.AuthSession
 
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -79,4 +82,7 @@ object Demo extends App with StrictLogging {
 //  println(clz.asSubclass(classOf[SchedulerJob]))
 //  println(clz.newInstance().asInstanceOf[SchedulerJob])
   println(UUID.randomUUID().toString.length)
+
+  val req = AuthSession()
+  println(Jackson.stringify(req))
 }

@@ -1,11 +1,11 @@
 package mass.job.boot
 
-import mass.core.MassSystem
+import com.typesafe.config.ConfigFactory
+import mass.Global
 import mass.job.JobSystem
-import mass.server.MassSystemExtension
 
 object JobMain extends App {
-  val massSystem = MassSystem().as[MassSystemExtension]
-  val jobSystem = JobSystem(massSystem)
+  val system = Global.registerActorSystem(ConfigFactory.load())
+  val jobSystem = JobSystem(system)
   new JobServer(jobSystem).startServerAwait()
 }

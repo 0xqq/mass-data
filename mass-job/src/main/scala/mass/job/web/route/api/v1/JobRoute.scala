@@ -60,7 +60,7 @@ class JobRoute(services: Services) extends AbstractRoute with StrictLogging {
 
   def uploadJobPostRoute: Route = pathPost("upload_job") {
     extractExecutionContext { implicit ec =>
-      storeUploadedFile("job", createTempFileFunc(services.jobSystem.massSystem.tempDir)) {
+      storeUploadedFile("job", createTempFileFunc(services.jobSystem.massExSystem.tempDirectory)) {
         case (fileInfo, file) =>
           futureComplete(
             (master ? JobActor.jobMessage(JobUploadJobReq(file, fileInfo.fileName, fileInfo.contentType.charset)))

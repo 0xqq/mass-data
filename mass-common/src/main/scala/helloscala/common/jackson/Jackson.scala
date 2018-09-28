@@ -55,7 +55,7 @@ object Jackson {
     if (compare) extract(tree) else Left(HSBadRequestException(s"compare比较结果为false，需要类型：${ev1.runtimeClass.getName}"))
 
   private def createObjectMapper: ObjectMapper = {
-    val FILTER_ID_CLASS = classOf[GeneratedMessage]
+    val FILTER_ID_CLASS: Class[GeneratedMessage] = classOf[GeneratedMessage]
     new ObjectMapper()
       .setFilterProvider(new SimpleFilterProvider()
         .addFilter(FILTER_ID_CLASS.getName, SimpleBeanPropertyFilter.serializeAllExcept("allFields")))

@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.StrictLogging
 import helloscala.common.exception.{HSException, HSNotFoundException}
 import helloscala.common.types.ObjectId
 import helloscala.common.util.StringUtils
+import mass.Global
 import mass.core.job.{JobConstants, SchedulerContext, SchedulerJob}
 import mass.job.repository.JobRepo
 import mass.model.job.{JobLog, JobStatus}
@@ -19,8 +20,9 @@ private[job] class JobClassJob extends Job with StrictLogging {
   override def execute(context: JobExecutionContext): Unit = {
     val jobClass = context.getJobDetail.getJobDataMap.getString(JobConstants.JOB_CLASS)
     require(StringUtils.isNoneBlank(jobClass), s"JOB_CLASS 不能为空。")
-
-    val db = JobSystem.instance.massSystem.sqlManager
+    val system = Global.system
+    val jobSystem = JobSystem(system)
+    val db = jobSystem.massExSystem.sqlManager
     val jobKey = context.getJobDetail.getKey.getName
     val triggerKey = context.getTrigger.getKey.getName
     val logId = ObjectId.getString()
@@ -30,13 +32,13 @@ private[job] class JobClassJob extends Job with StrictLogging {
 
     val clz = Class.forName(jobClass)
     if (classOf[SchedulerJob].isAssignableFrom(clz)) {
-      implicit val ec: ExecutionContext = JobSystem.instance.executionContext
+      implicit val ec: ExecutionContext = jobSystem.executionContext
       db.run(JobRepo.findJob(jobKey, triggerKey))
         .flatMap {
           case Some((jobItem, jobTrigger)) =>
             val data = (context.getJobDetail.getJobDataMap.asScala.mapValues(_.toString) - JobConstants.JOB_CLASS).toMap
             val config = jobItem.config.get
-            val ctx = SchedulerContext(config, jobTrigger.config.get, data, config.resources, JobSystem.instance)
+            val ctx = SchedulerContext(config, jobTrigger.config.get, data, config.resources, jobSystem)
             clz.newInstance().asInstanceOf[SchedulerJob].run(ctx)
           case _ => Future.failed(HSNotFoundException(s"Job[$jobKey:$triggerKey]未找到"))
         }

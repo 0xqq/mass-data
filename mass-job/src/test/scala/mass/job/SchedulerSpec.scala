@@ -1,42 +1,36 @@
 package mass.job
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.mass.AkkaUtils
 import com.typesafe.scalalogging.StrictLogging
 import helloscala.common.Configuration
 import helloscala.common.test.HelloscalaSpec
-import mass.core.MassSystem
-import mass.server.MassSystemExtension
+import mass.Global
+import mass.extension.MassExSystem
 import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration._
 
-object TestAkkaSystem {
-  val system = ActorSystem("mass")
-}
-
 trait SchedulerSpec extends HelloscalaSpec with BeforeAndAfterAll with ScalatestRouteTest with StrictLogging {
 
-  protected val massSystem: MassSystemExtension =
-    MassSystem(TestAkkaSystem.system).as[MassSystemExtension]
+  private[this] var _massSystem: MassExSystem = _
+  private[this] var _jobSystem: JobSystem = _
 
-  override protected def createActorSystem(): ActorSystem =
-    TestAkkaSystem.system
+  protected def massSystem: MassExSystem = _massSystem
 
-  private[this] var _schedulerSystem: JobSystem = _
+  protected def jobSystem: JobSystem = _jobSystem
 
-  protected def jobSystem: JobSystem = _schedulerSystem
-
-  protected def configuration: Configuration = jobSystem.configuration
+  protected def configuration: Configuration = _jobSystem.configuration
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    _schedulerSystem = JobSystem(massSystem)
+    Global.registerActorSystem(system)
+    _massSystem = MassExSystem(system)
+    _jobSystem = JobSystem(system)
   }
 
   override protected def afterAll(): Unit = {
-    AkkaUtils.shutdownActorSystem(massSystem.system, 10.seconds)
+    AkkaUtils.shutdownActorSystem(system, 10.seconds)
     super.afterAll()
   }
 
